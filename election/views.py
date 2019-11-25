@@ -1,7 +1,7 @@
 import json
 from django.http import HttpResponse
 from django.contrib.auth.models import User
-from election import models
+from .models import Elections, VoterList, TempVoterList
 import jwt
 from django.conf import settings
 from .utils.SendEmail import EmailSender
@@ -33,7 +33,7 @@ def create_election(request):
     #     # data['voters'] = ''
     #     data['isPrivate'] = True
     temp = {'author': data['author'], 'status': data['status'], 'name': data['name'], 'shortName': data['shortName']}
-    if models.Elections.objects.create(**temp):
+    if Elections.objects.create(**temp):
         res = {
             'code': 1,
             'message': '创建成功'
@@ -61,7 +61,7 @@ def fetch_elections(request):
     username = token.get('data').get('username')
     author = User.objects.get(username=username)
     try:
-        elections = models.Elections.objects.filter(author=author)
+        elections = Elections.objects.filter(author=author)
         elections_list = []
         for election in elections:
             election_dict = election.to_dict()
@@ -86,7 +86,7 @@ def update_elections(request):
     id = data['id']
     author = data['author']
     try:
-        election = models.Elections.objects.get(id=id)
+        election = Elections.objects.get(id=id)
         if election.description != data['description']:
             election.description = data['description']
         if election.name != data['name']:
@@ -114,7 +114,7 @@ def update_elections(request):
                 print(election.voters)
             election.isPrivate = data['isPrivate']
         election.save()
-        elections = models.Elections.objects.filter(author=author)
+        elections = Elections.objects.filter(author=author)
         elections_list = []
         for elect in elections:
             election_dict = elect.to_dict()
@@ -138,10 +138,10 @@ def delete_elections(request):
     id = data['id']
     author = data['author']
     try:
-        election = models.Elections.objects.get(id=id)
+        election = Elections.objects.get(id=id)
         election.status = data['status']
         election.save()
-        elections = models.Elections.objects.filter(author=author)
+        elections = Elections.objects.filter(author=author)
         elections_list = []
         for elect in elections:
             election_dict = elect.to_dict()
@@ -194,43 +194,122 @@ def setting_election_content():
 
 
 # ################################开启选票，冻结选票, 恢复选票##################################
-def start_voting():
-    receivers = ['2480850946@qq.com']
-    usernames = ['htwu']
-    passwords = ['123456']
-    urls = 'http://localhost:3000/user/login'
-    emailSender = EmailSender(receivers, usernames, passwords, urls)
-    emailSender.send_emails()
+def start_voting(request):
+    """
+    启动选票：修改选举状态， 给选举投票者列表中的所有人员创建用户并发送邮件。
+    :param request:
+    :return:
+    """
+    data = json.loads(request.body)
+    id = data['id']
+    author = data['author']
+    try:
+        election = Elections.objects.get(id=id)
+        election.status = 1
+        election.save()
+    except Exception:
+        pass
+    try:
+        voters = TempVoterList.objects.filter(Elections=election)  # .value_list('voter', 'email')
+        # receivers = voters[:][1]  # ['2480850946@qq.com']
+        # usernames = voters[:][0].value_list('username', flat=True)  # ['htwu']
+        # passwords = ['123456']
+        receivers = []
+        usernames = []
+        passwords = []
+        for each in voters:
+            usernames.append(each.voter)
+            receivers.append(each.email)
+            try:
+                User.objects.get(username=each.voter)
+                passwords.append('your own passwords!')
+            except User.DoesNotExist:
+                User.objects.create_user(username=each.voter, password='123456', email=each.email)
+                passwords.append('123456')
+            VoterList.objects.create(voter=User.objects.get(username=each.voter), email=each.email, elections=election)
+        urls = 'http://localhost:3000/user/login'
+        emailSender = EmailSender(receivers, usernames, passwords, urls)
+        emailSender.send_emails()
+    except Exception:
+        pass
+    return 0
+
+
+def suspend_voting(request):
+    """
+    冻结选举：修改选举状态
+    :return:
+    """
+    data = json.loads(request.body)
+    id = data['id']
+    author = data['author']
+    try:
+        election = Elections.objects.get(id=id)
+        election.status = 2
+        election.save()
+    except Exception:
+        pass
     pass
 
 
-def suspend_voting():
+def restart_voting(request):
+    """
+    重启选举：修改选举状态
+    :param request:
+    :return:
+    """
+    data = json.loads(request.body)
+    id = data['id']
+    author = data['author']
+    try:
+        election = Elections.objects.get(id=id)
+        election.status = 1
+        election.save()
+    except Exception:
+        pass
     pass
 
 
-def restart_voting():
-    pass
-
-
-# ################################返回投票中的加密包，接收最终投票结果##################################
-def fetch_vote_functions():
-    pass
-
-
-def collect_votes():
+def stop_voting(request):
+    """
+    结束选举：修改选举状态
+    :param request:
+    :return:
+    """
+    data = json.loads(request.body)
+    id = data['id']
+    author = data['author']
+    try:
+        election = Elections.objects.get(id=id)
+        election.status = 4
+        election.save()
+    except Exception:
+        pass
     pass
 
 
 # ################################相应BBS请求##################################
-def response_bbc():
+def response_bbc(request):
+    """
+    相应BBS请求：将能够填充的数据段都填充完整，发送给客户端
+    :return:
+    """
     pass
 
 
 # ################################生成投票结果##################################
-def anonymous_result():
+def anonymous_result(request):
     pass
 
 
-def real_name_result():
+def real_name_result(request):
     pass
 
+
+# ################################返回投票中的加密包，接收最终投票结果##################################
+def fetch_vote_functions(request):
+    pass
+
+
+def collect_votes(request):
+    pass

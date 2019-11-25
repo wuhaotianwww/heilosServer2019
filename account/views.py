@@ -5,7 +5,6 @@ import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
-# Create your views here.
 
 SECRET_KEY = "548D859ADA8B084E76730CCEFA052EE1"
 
@@ -27,8 +26,7 @@ def login(request):
                     }
                 }, settings.SECRET_KEY, algorithm='HS256').decode('utf-8'),
             }
-            response = HttpResponse(json.dumps(
-                res), content_type='application/json')
+            response = HttpResponse(json.dumps(res), content_type='application/json')
             # if data['autologin']:
             #     is_login = make_password(
             #         data['username']+data['password'], None, 'pbkdf2_sha256')
@@ -53,32 +51,7 @@ def auto_login(request):
         'message': '登录成功',
         'user': username,
     }
-    return HttpResponse(json.dumps(
-        res), content_type='application/json')
-    # try:
-    #     users = User.objects.filter(username=username)
-    #     for user in users:
-    #         print(type(user))
-    #         user_i = user.to_dict()
-    #     password = user_i.get('password')
-    #     if check_password(username+password, encryption):
-    #         res = {
-    #             'code': 1,
-    #             'message': '登录成功',
-    #             'user': username,
-    #         }
-    #         return HttpResponse(json.dumps(
-    #             res), content_type='application/json')
-    #     else:
-    #         response = HttpResponse(json.dumps({'code': -1,
-    #                                             'message': '密码错误', }), content_type='application/json')
-    #         response.delete_cookie('isLogin')
-    #         return response
-    # except User.DoesNotExist:
-    #     response = HttpResponse(json.dumps({'code': -1,
-    #                                         'message': '不存在该用户', }), content_type='application/json')
-    #     response.delete_cookie('isLogin')
-    #     return response
+    return HttpResponse(json.dumps(res), content_type='application/json')
 
 
 def register(request):

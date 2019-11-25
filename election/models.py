@@ -69,7 +69,7 @@ class VoterList(models.Model):
     email = models.CharField(max_length=300, null=False)
     voteResult = models.CharField(max_length=300, null=True)
     voterKey = models.CharField(max_length=300, null=True)
-    Elections = models.ForeignKey('Elections', on_delete=models.CASCADE)
+    elections = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ("voter",)
@@ -77,3 +77,14 @@ class VoterList(models.Model):
     def __str__(self):
         return self.voter
 
+
+class TempVoterList(models.Model):
+    voter = models.CharField(max_length=300, null=False)
+    email = models.CharField(max_length=300, null=False)
+    elections = models.ForeignKey('Elections', on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ("voter",)
+
+    def __str__(self):
+        return self.voter
