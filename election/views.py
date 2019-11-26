@@ -16,16 +16,19 @@ def create_election(request):
     1.解析提交数据，将本次选举信息记录到数据库中。
     """
     data = json.loads(request.body)
-    auth = request.META.get('HTTP_AUTHORIZATION').split()
-    token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
-    username = token.get('data').get('username')
+    if parameters.Istest:
+        username = 'admin'
+    else:
+        auth = request.META.get('HTTP_AUTHORIZATION').split()
+        token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+        username = token.get('data').get('username')
 
-    if Elections.from_dict(data, User.objects.get(username=username)):
-        # 添加投票人到临时数据库
-        temp_election = Elections.objects.get(author=User.objects.get(username=username))[-1]
-        for i in range(len(data['voterlist'])):
-            temp_voters={}
-            temp_voters['voter'] = data['voterlist'][i]
+    temp_election = Elections.from_dict(data, User.objects.get(username=username))
+
+    if temp_election:
+        for i in range(len(data['voterslist'])):
+            temp_voters = {}
+            temp_voters['voter'] = data['voterslist'][i]
             temp_voters['email'] = data['emaillist'][i]
             temp_voters['election'] = temp_election
             if not TempVoterList.objects.create(**temp_voters):
@@ -55,10 +58,13 @@ def fetch_elections(request):
     获取用户创建的所有选举：
     1.按照用户名从数据库中过滤出该用户创建的所有选票，返回给前端。
     """
-    auth = request.META.get('HTTP_AUTHORIZATION').split()
-    token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
-    username = token.get('data').get('username')
-    author = User.objects.get(username=username)
+    if parameters.Istest:
+        author = User.objects.get(username='admin')
+    else:
+        auth = request.META.get('HTTP_AUTHORIZATION').split()
+        token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+        username = token.get('data').get('username')
+        author = User.objects.get(username=username)
 
     try:
         elections = Elections.objects.filter(author=author)
@@ -87,17 +93,20 @@ def update_elections(request):
         election = Elections.objects.get(id=id)
         election.update(data)
         TempVoterList.objects.filter(election=election).delete()
-        for i in range(len(data['voterlist'])):
+        for i in range(len(data['voterslist'])):
             temp_voters={}
-            temp_voters['voter'] = data['voterlist'][i]
+            temp_voters['voter'] = data['voterslist'][i]
             temp_voters['email'] = data['emaillist'][i]
             temp_voters['election'] = election
             TempVoterList.objects.create(**temp_voters)
-        return HttpResponse(json.dumps({
+        election = Elections.objects.get(id=id)
+        dictlist = election.to_dict()
+        res = {
             'code': 1,
-            'data': Elections.objects.filter(id=id).to_dict(),
-            'message': '更新用户创建的投票成功'
-        }), content_type='application/json')
+            'data': dictlist,  # election.to_dict(),
+            'message': '更新投票成功'
+        }
+        return HttpResponse(json.dumps(res), content_type='application/json')
     except Exception:
         res = {
             'code': -1,
@@ -116,8 +125,7 @@ def delete_elections(request):
         election.save()
         return HttpResponse(json.dumps({
             'code': 1,
-            'electionid': id,
-            'status': 6,
+            'data': {'electionid': id, 'status': 6},
             'message': '删除用户创建的投票成功'
         }), content_type='application/json')
     except Exception:
@@ -255,7 +263,7 @@ def response_bbc(request):
         for each in result_list:
             resshow.append({'plainvote': each[0], 'verifyinfo': each[1]})
         result['resshow'] = resshow
-        result['resstatistics'] = election.voteResult
+        result['resstatistics'] = eval(election.voteResult)
     else:
         result['resshow'] = ""
         result['resstatistics'] = ""
@@ -270,28 +278,103 @@ def response_bbc(request):
 
 # ################################生成投票结果##################################
 def generate_result(request):
+    data = json.loads(request.body)
+    election = Elections.objects.filter(id=data['electionid'])
+    election.status = 3
+    if election.isAnonymous:
+        return anonymous_result(request)
+    else:
+        return real_name_result(request)
+
+
+def anonymous_result(request):
+    data = json.loads(request.body)
+    election = Elections.objects.filter(id=data['electionid'])
     pass
 
 
-def anonymous_result():
-    pass
-
-
-def real_name_result():
-    pass
+def real_name_result(request):
+    data = json.loads(request.body)
+    election = Elections.objects.filter(id=data['electionid'])
+    out = VoterList.objects.filter(election=election).value_list('voteResult')
+    result = {}
+    for each in out:
+        if each in result:
+            result[each] = result[each] + 1
+        else:
+            result[each] = 1
+    election.voteResult = str(result)
+    election.status = 5
+    election.save()
+    res = {
+        'code': 1,
+        'data': {'electionid': data['electionid'], 'status': 5},
+        'message': '更新数据成功！'
+    }
+    return HttpResponse(json.dumps(res), content_type='application/json')
 
 
 # ################################返回投票中的加密包，接收最终投票结果##################################
 def fetch_vote_functions(request):
-    pass
+    data = json.loads(request.body)
+    election = Elections.objects.filter(id=data['electionid'])
+    hashvalue = []
+    try:
+        res = {
+            'code': 1,
+            'data': {'publickey': eval(election.publicKey), 'selectionhash': hashvalue},
+            'message': '获取选举信息成功'
+        }
+        return HttpResponse(json.dumps(res), content_type='application/json')
+    except Exception:
+        pass
 
 
 def fetch_vote_info(request):
-    pass
+    auth = request.META.get('HTTP_AUTHORIZATION').split()
+    token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+    username = token.get('data').get('username')
+    user = User.objects.get(username=username)
+    try:
+        voters = VoterList.objects.filter(voter=user)
+        elections = []
+        for each in voters:
+            item = Elections.objects.filter(id=each.election)
+            election = item.to_dict()
+            if each.voteResult is not None:
+                election['isvoted'] = True
+            else:
+                election['isvoted'] = False
+            elections.append(election)
+        res = {
+            'code': 1,
+            'data': elections,
+            'message': '获取选举信息成功'
+        }
+        return HttpResponse(json.dumps(res), content_type='application/json')
+    except Exception:
+        pass
 
 
 def collect_votes(request):
-    pass
+    data = json.loads(request.body)
+    auth = request.META.get('HTTP_AUTHORIZATION').split()
+    token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+    username = token.get('data').get('username')
+    user = User.objects.get(username=username)
+    election = Elections.objects.filter(id=data['electionid'])
+    voter = VoterList.objects.filter(voter=user, election=election)
+    try:
+        voter.voteResult = data['privatemessage']
+        voter.voterKey = data['trapdoor']
+        voter.save()
+        res = {
+            'code': 1,
+            'message': '投票成功'
+        }
+        return HttpResponse(json.dumps(res), content_type='application/json')
+    except Exception:
+        pass
 
 
 # ################################提供文件下载服务##################################

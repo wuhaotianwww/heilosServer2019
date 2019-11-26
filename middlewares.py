@@ -1,13 +1,23 @@
 from django.utils.deprecation import MiddlewareMixin
+import parameters
 
 
 class AuthMD(MiddlewareMixin):
-    balck_list = ['/election/createElection/',
-                  '/election/fetchElections/',
-                  '/election/updateElection/',
-                  '/election/deleteElection/',
-                  '/election/fetchVoters/',
-                  '/account/autoLogin/']  # 黑名单
+    if not parameters.Istest:
+        balck_list = ['/election/createElection/',
+                      '/election/fetchElections/',
+                      '/election/updateElection/',
+                      '/election/deleteElection/',
+                      '/election/startElection/',
+                      '/election/freezeElection/',
+                      '/election/endElection/',
+                      '/election/fetchBbs/',
+                      '/election/resultElection/',
+                      '/election/fetchVotings/',
+                      '/election/fetchVotingInfo/',
+                      '/account/reportVoting/']  # 黑名单
+    else:
+        balck_list = []
 
     def process_request(self, request):
         from django.http import HttpResponse

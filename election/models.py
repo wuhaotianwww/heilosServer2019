@@ -32,9 +32,10 @@ class Elections(models.Model):
     questions = models.TextField()
     selections = models.TextField()
     isAllowAbstention = models.BooleanField(default=False)
-    publicKey = models.CharField(max_length=300, null=True)
+    publicKey = models.TextField()
     verifyFile = models.CharField(max_length=300, null=True)
     voteResult = models.CharField(max_length=300, null=True)
+    # privateKey = models.CharField(max_length=300, null=True)
 
     # class Meta:
     #     ordering = ("-startTime",)
@@ -52,11 +53,10 @@ class Elections(models.Model):
         data['starttime'] = self.startTime.strftime('%Y-%m-%d %H:%M:%S') if self.startTime else None
         data['endtime'] = self.endTime.strftime('%Y-%m-%d %H:%M:%S') if self.endTime else None
 
-        data['questionlist'] = self.shortName.split('@')
-        data['selectionlist'] = [each.split('&') for each in self.shortName.split('@')[1:]]
-        data['voterslist'] = TempVoterList.objects.filter(election=self).value_list('voter')
-        data['emaillist'] = TempVoterList.objects.filter(election=self).value_list('email')
-
+        data['questionlist'] = self.questions.split('@')
+        data['selectionlist'] = [each.split('&') for each in self.selections.split('@')[1:]]
+        data['voterslist'] = [item[0] for item in list(TempVoterList.objects.filter(election=self).values_list('voter'))]
+        data['emaillist'] = [item[0] for item in list(TempVoterList.objects.filter(election=self).values_list('email'))]
         return data
 
     def update(self, data):
@@ -69,14 +69,14 @@ class Elections(models.Model):
         self.endTime = data['endtime']
 
         question = data['questionlist'][0]
-        for i in range(len(data['questionlist'] - 1)):
+        for i in range(len(data['questionlist']) - 1):
             question = question + "@" + data['questionlist'][i + 1]
         self.questions = question
 
         selections = ""
         for item in data['selectionlist']:
             selection = item[0]
-            for i in range(len(item - 1)):
+            for i in range(len(item) - 1):
                 selection = selection + "&" + item[i + 1]
             selections = selections + "@" + selection
         self.selections = selections
@@ -85,31 +85,31 @@ class Elections(models.Model):
 
     @staticmethod
     def from_dict(data, user):
-        election = {}
-        election['author'] = user
-        election['shortName'] = data['shortname']
-        election['name'] = data['fullname']
-        election['description'] = data['info']
-        election['startTime'] = data['starttime']
-        election['endTime'] = data['endtime']
-        election['status'] = 0
-        election['isPrivate'] = data['isprivate']
-        election['isAnonymous'] = data['isanonymous']
-        election['cryptoMethod'] = data['isanonymous']
+        item = {}
+        item['author'] = user
+        item['shortName'] = data['shortname']
+        item['fullName'] = data['fullname']
+        item['description'] = data['info']
+        item['startTime'] = data['starttime']
+        item['endTime'] = data['endtime']
+        item['status'] = 0
+        item['isPrivate'] = data['isprivate']
+        item['isAnonymous'] = data['isanonymous']
+        item['cryptoMethod'] = data['isanonymous']
 
         question = data['questionlist'][0]
-        for i in range(len(data['questionlist'] - 1)):
+        for i in range(len(data['questionlist']) - 1):
             question = question + "@" + data['questionlist'][i + 1]
-        election['questions'] = question
+        item['questions'] = question
 
         selections = ""
-        for item in data['selectionlist']:
-            selection = item[0]
-            for i in range(len(item - 1)):
-                selection = selection + "&" + item[i + 1]
+        for each in data['selectionlist']:
+            selection = each[0]
+            for i in range(len(each) - 1):
+                selection = selection + "&" + each[i + 1]
             selections = selections + "@" + selection
-        election['selections'] = selections
-        return Elections.objects.create(**election)
+        item['selections'] = selections
+        return Elections.objects.create(**item)
 
 
 class VoterList(models.Model):
