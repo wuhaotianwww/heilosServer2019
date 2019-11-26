@@ -20,8 +20,8 @@ class Elections(models.Model):
         (1, '加密一'),
     )
     shortName = models.CharField(max_length=300, null=False)
+    fullName = models.CharField(max_length=300, null=False)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=300, null=False)
     description = models.TextField()
     startTime = models.DateTimeField(default=timezone.now, null=False)
     endTime = models.DateTimeField(default=timezone.now, null=False)
@@ -29,39 +29,87 @@ class Elections(models.Model):
     isPrivate = models.BooleanField(default=True)
     isAnonymous = models.BooleanField(default=True)
     cryptoMethod = models.SmallIntegerField(choices=asset_crypto_method, default=0)
-    question = models.CharField(max_length=300, null=True)
-    selections = models.CharField(max_length=300, null=True)
+    questions = models.TextField()
+    selections = models.TextField()
     isAllowAbstention = models.BooleanField(default=False)
     publicKey = models.CharField(max_length=300, null=True)
     verifyFile = models.CharField(max_length=300, null=True)
     voteResult = models.CharField(max_length=300, null=True)
 
-    class Meta:
-        ordering = ("-startTime",)
+    # class Meta:
+    #     ordering = ("-startTime",)
 
     def __str__(self):
         return self.shortName
 
-    def to_dict(self, fields=None, exclude=None):
+    def to_dict(self):
         data = {}
-        for f in self._meta.concrete_fields + self._meta.many_to_many:
-            value = f.value_from_object(self)
+        data['shortname'] = self.shortName
+        data['fullname'] = self.fullName
+        data['isprivate'] = self.isPrivate
+        data['isanonymous'] = self.isAnonymous
+        data['info'] = self.description
+        data['starttime'] = self.startTime.strftime('%Y-%m-%d %H:%M:%S') if self.startTime else None
+        data['endtime'] = self.endTime.strftime('%Y-%m-%d %H:%M:%S') if self.endTime else None
 
-            if fields and f.name not in fields:
-                continue
-
-            if exclude and f.name in exclude:
-                continue
-
-            if isinstance(f, ManyToManyField):
-                value = [i.id for i in value] if self.pk else None
-
-            if isinstance(f, DateTimeField):
-                value = value.strftime('%Y-%m-%d %H:%M:%S') if value else None
-
-            data[f.name] = value
+        data['questionlist'] = self.shortName.split('@')
+        data['selectionlist'] = [each.split('&') for each in self.shortName.split('@')[1:]]
+        data['voterslist'] = TempVoterList.objects.filter(election=self).value_list('voter')
+        data['emaillist'] = TempVoterList.objects.filter(election=self).value_list('email')
 
         return data
+
+    def update(self, data):
+        self.shortName = data['shortname']
+        self.fullName = data['fullname']
+        self.isPrivate = data['isprivate']
+        self.isAnonymous = data['isanonymous']
+        self.description = data['info']
+        self.startTime = data['starttime']
+        self.endTime = data['endtime']
+
+        question = data['questionlist'][0]
+        for i in range(len(data['questionlist'] - 1)):
+            question = question + "@" + data['questionlist'][i + 1]
+        self.questions = question
+
+        selections = ""
+        for item in data['selectionlist']:
+            selection = item[0]
+            for i in range(len(item - 1)):
+                selection = selection + "&" + item[i + 1]
+            selections = selections + "@" + selection
+        self.selections = selections
+
+        self.save()
+
+    @staticmethod
+    def from_dict(data, user):
+        election = {}
+        election['author'] = user
+        election['shortName'] = data['shortname']
+        election['name'] = data['fullname']
+        election['description'] = data['info']
+        election['startTime'] = data['starttime']
+        election['endTime'] = data['endtime']
+        election['status'] = 0
+        election['isPrivate'] = data['isprivate']
+        election['isAnonymous'] = data['isanonymous']
+        election['cryptoMethod'] = data['isanonymous']
+
+        question = data['questionlist'][0]
+        for i in range(len(data['questionlist'] - 1)):
+            question = question + "@" + data['questionlist'][i + 1]
+        election['questions'] = question
+
+        selections = ""
+        for item in data['selectionlist']:
+            selection = item[0]
+            for i in range(len(item - 1)):
+                selection = selection + "&" + item[i + 1]
+            selections = selections + "@" + selection
+        election['selections'] = selections
+        return Elections.objects.create(**election)
 
 
 class VoterList(models.Model):
@@ -69,7 +117,7 @@ class VoterList(models.Model):
     email = models.CharField(max_length=300, null=False)
     voteResult = models.CharField(max_length=300, null=True)
     voterKey = models.CharField(max_length=300, null=True)
-    elections = models.ForeignKey('Elections', on_delete=models.CASCADE)
+    election = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ("voter",)
@@ -81,10 +129,12 @@ class VoterList(models.Model):
 class TempVoterList(models.Model):
     voter = models.CharField(max_length=300, null=False)
     email = models.CharField(max_length=300, null=False)
-    elections = models.ForeignKey('Elections', on_delete=models.CASCADE)
+    election = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ("voter",)
 
     def __str__(self):
         return self.voter
+
+

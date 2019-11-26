@@ -17,14 +17,16 @@ def login(request):
             res = {
                 'code': 1,
                 'message': '登录成功',
-                'user': data['username'],
-                'token': jwt.encode({
-                    'exp': datetime.utcnow() + timedelta(days=1),
-                    'iat': datetime.utcnow(),
-                    'data': {
-                        'username': data['username']
-                    }
-                }, settings.SECRET_KEY, algorithm='HS256').decode('utf-8'),
+                'data': {
+                    'user': data['username'],
+                    'token': jwt.encode({
+                        'exp': datetime.utcnow() + timedelta(days=1),
+                        'iat': datetime.utcnow(),
+                        'data': {
+                            'username': data['username']
+                        },
+                    }, settings.SECRET_KEY, algorithm='HS256').decode('utf-8'),
+                },
             }
             response = HttpResponse(json.dumps(res), content_type='application/json')
             # if data['autologin']:
@@ -49,7 +51,7 @@ def auto_login(request):
     res = {
         'code': 1,
         'message': '登录成功',
-        'user': username,
+        'data': {'user': username},
     }
     return HttpResponse(json.dumps(res), content_type='application/json')
 

@@ -7,13 +7,15 @@ urlpatterns = [
     path('updateElection/', views.update_elections),
     path('deleteElection/', views.delete_elections),
 
-    path('startElection/', views.delete_elections),
-    path('freezeElection/', views.delete_elections),
-    path('endElection/', views.delete_elections),
-    path('resultElection/', views.delete_elections),
-    path('fetchBbs/', views.delete_elections),
+    path('startElection/', views.start_voting),
+    path('freezeElection/', views.suspend_voting),
+    path('endElection/', views.stop_voting),
+    path('resultElection/', views.generate_result),
+    path('fetchBbs/', views.response_bbc),
 
-    path('fetchVotings/', views.delete_elections),
-    path('fetchVotingInfo/', views.fetch_voters),
-    path('reportVoting/', views.delete_elections)
+    path('fetchVotings/', views.fetch_vote_functions),
+    path('fetchVotingInfo/', views.fetch_vote_info),
+    path('reportVoting/', views.collect_votes),
+
+    path('download/<str:file_path>/', views.file_response_download)
 ]
