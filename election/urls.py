@@ -13,8 +13,8 @@ urlpatterns = [
     path('resultElection/', views.generate_result),
     path('fetchBbs/', views.response_bbc),
 
-    path('fetchVotings/', views.fetch_vote_functions),
-    path('fetchVotingInfo/', views.fetch_vote_info),
+    path('fetchVotings/', views.fetch_vote_info),
+    path('fetchVotingInfo/', views.fetch_vote_functions),
     path('reportVoting/', views.collect_votes),
 
     path('download/<str:file_path>/', views.file_response_download)

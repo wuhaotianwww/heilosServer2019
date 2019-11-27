@@ -34,8 +34,9 @@ class Elections(models.Model):
     isAllowAbstention = models.BooleanField(default=False)
     publicKey = models.TextField()
     verifyFile = models.CharField(max_length=300, null=True)
-    voteResult = models.CharField(max_length=300, null=True)
-    # privateKey = models.CharField(max_length=300, null=True)
+    voteResult = models.CharField(max_length=500, null=True)
+    privateKey = models.CharField(max_length=300, null=True)
+    selectionsHash = models.TextField()
 
     # class Meta:
     #     ordering = ("-startTime",)
@@ -113,17 +114,18 @@ class Elections(models.Model):
 
 
 class VoterList(models.Model):
-    voter = models.ForeignKey(User, on_delete=models.CASCADE)
+    voter = models.CharField(max_length=300, null=False)  # models.ForeignKey(User, on_delete=models.CASCADE)
     email = models.CharField(max_length=300, null=False)
+    isVote = models.BooleanField(default=False)
     voteResult = models.CharField(max_length=300, null=True)
     voterKey = models.CharField(max_length=300, null=True)
     election = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
-    class Meta:
-        ordering = ("voter",)
+    # class Meta:
+    #     ordering = ("voter",)
 
     def __str__(self):
-        return self.voter
+        return self.email
 
 
 class TempVoterList(models.Model):
@@ -131,10 +133,10 @@ class TempVoterList(models.Model):
     email = models.CharField(max_length=300, null=False)
     election = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
-    class Meta:
-        ordering = ("voter",)
+    # class Meta:
+    #     ordering = ("email",)
 
     def __str__(self):
-        return self.voter
+        return self.email
 
 
