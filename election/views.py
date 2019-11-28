@@ -76,7 +76,7 @@ def fetch_elections(request):
             elections_list.append(election_dict)
         res = {
             'code': 1,
-            'data': elections_list,
+            'data': {'electionList': elections_list},
             'message': '该用户创建的所有投票'
         }
         return HttpResponse(json.dumps(res), content_type='application/json')

@@ -51,6 +51,8 @@ class Elections(models.Model):
         data['isprivate'] = self.isPrivate
         data['isanonymous'] = self.isAnonymous
         data['info'] = self.description
+        # data['status'] = str(self.status)
+        # data['id'] = self.id
         data['starttime'] = self.startTime.strftime('%Y-%m-%d %H:%M:%S') if self.startTime else None
         data['endtime'] = self.endTime.strftime('%Y-%m-%d %H:%M:%S') if self.endTime else None
 
@@ -94,9 +96,9 @@ class Elections(models.Model):
         item['startTime'] = data['starttime']
         item['endTime'] = data['endtime']
         item['status'] = 0
-        item['isPrivate'] = data['isprivate']
-        item['isAnonymous'] = data['isanonymous']
-        item['cryptoMethod'] = data['isanonymous']
+        item['isPrivate'] = data['isprivate'] == 'true'
+        item['isAnonymous'] = data['isanonymous'] == 'true'
+        item['cryptoMethod'] = data['isanonymous'] == 'true'
 
         question = data['questionlist'][0]
         for i in range(len(data['questionlist']) - 1):
