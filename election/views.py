@@ -30,7 +30,9 @@ def create_election(request):
     if temp_election:
         for i in range(len(data['voterslist'])):
             temp_voters = {}
-            temp_voters['voter'] = data['voterslist'][i]
+            temp_voters['voter'] = data['voterslist'][i]['username']
+            temp_voters['firstName'] = data['voterslist'][i]['firstname']
+            temp_voters['lastName'] = data['voterslist'][i]['lastname']
             temp_voters['email'] = data['emaillist'][i]
             temp_voters['election'] = temp_election
             if not TempVoterList.objects.create(**temp_voters):

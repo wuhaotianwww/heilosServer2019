@@ -59,7 +59,8 @@ class Elections(models.Model):
 
         data['questionlist'] = self.questions.split('@')
         data['selectionlist'] = [each.split('&') for each in self.selections.split('@')[1:]]
-        data['voterslist'] = [item[0] for item in list(TempVoterList.objects.filter(election=self).values_list('voter'))]
+        data['voterslist'] = [{'username': item[0], 'firstname': item[1], 'lastname': item[2]}
+                              for item in list(TempVoterList.objects.filter(election=self).values_list('voter', 'firstName', 'lastName'))]
         data['emaillist'] = [item[0] for item in list(TempVoterList.objects.filter(election=self).values_list('email'))]
         return data
 
@@ -133,6 +134,8 @@ class VoterList(models.Model):
 
 class TempVoterList(models.Model):
     voter = models.CharField(max_length=300, null=False)
+    firstName = models.CharField(max_length=300, null=False)
+    lastName = models.CharField(max_length=300, null=False)
     email = models.CharField(max_length=300, null=False)
     election = models.ForeignKey('Elections', on_delete=models.CASCADE)
 
