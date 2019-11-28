@@ -103,9 +103,10 @@ def update_elections(request):
             TempVoterList.objects.create(**temp_voters)
         election = Elections.objects.get(id=id)
         dictlist = election.to_dict()
+
         res = {
             'code': 1,
-            'data': dictlist,  # election.to_dict(),
+            'data': {'election': dictlist},  # election.to_dict(),
             'message': '更新投票成功'
         }
         return HttpResponse(json.dumps(res), content_type='application/json')

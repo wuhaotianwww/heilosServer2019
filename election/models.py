@@ -51,8 +51,9 @@ class Elections(models.Model):
         data['isprivate'] = self.isPrivate
         data['isanonymous'] = self.isAnonymous
         data['info'] = self.description
-        # data['status'] = str(self.status)
-        # data['id'] = self.id
+        data['status'] = str(self.status)
+        data['id'] = self.id
+        data['author'] = self.author.username
         data['starttime'] = self.startTime.strftime('%Y-%m-%d %H:%M:%S') if self.startTime else None
         data['endtime'] = self.endTime.strftime('%Y-%m-%d %H:%M:%S') if self.endTime else None
 
@@ -65,8 +66,8 @@ class Elections(models.Model):
     def update(self, data):
         self.shortName = data['shortname']
         self.fullName = data['fullname']
-        self.isPrivate = data['isprivate']
-        self.isAnonymous = data['isanonymous']
+        self.isPrivate = data['isprivate'] == 'true'
+        self.isAnonymous = data['isanonymous'] == 'true'
         self.description = data['info']
         self.startTime = data['starttime']
         self.endTime = data['endtime']
