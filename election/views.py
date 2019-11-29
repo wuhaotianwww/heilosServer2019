@@ -99,7 +99,9 @@ def update_elections(request):
         TempVoterList.objects.filter(election=election).delete()
         for i in range(len(data['voterslist'])):
             temp_voters={}
-            temp_voters['voter'] = data['voterslist'][i]
+            temp_voters['voter'] = data['voterslist'][i]['username']
+            temp_voters['firstName'] = data['voterslist'][i]['firstname']
+            temp_voters['lastName'] = data['voterslist'][i]['lastname']
             temp_voters['email'] = data['emaillist'][i]
             temp_voters['election'] = election
             TempVoterList.objects.create(**temp_voters)
@@ -130,7 +132,7 @@ def delete_elections(request):
         election.save()
         return HttpResponse(json.dumps({
             'code': 1,
-            'data': {'electionid': id, 'status': 6},
+            'data': {'electionid': id, 'status': "6"},
             'message': '删除用户创建的投票成功'
         }), content_type='application/json')
     except Exception:
@@ -150,7 +152,7 @@ def start_voting(request):
     """
     data = json.loads(request.body)
     id = data['electionid']
-    status = data['status']
+    status = int(data['status'])
     print("是否是第一次启动(0表示是)：", status)
     try:
         election = Elections.objects.get(id=id)
@@ -175,12 +177,13 @@ def start_voting(request):
             for i in range(len(strlist)-1):
                 hashvalue += "&&" + strlist[i+1]
             election.selectionsHash = hashvalue
-            election.save()
 
-            voters = TempVoterList.objects.filter(Elections=election)
+            voters = TempVoterList.objects.filter(election=election)
+            election.save()
             receivers = []
             usernames = []
             passwords = []
+            print("jie guo baocun chenggong ")
             for each in voters:
                 usernames.append(each.voter)
                 receivers.append(each.email)
@@ -192,6 +195,7 @@ def start_voting(request):
                     passwords.append('123456')
                 VoterList.objects.create(voter=User.objects.get(username=each.voter), email=each.email, election=election)
             urls = 'http://localhost:3000/user/login'
+            print("jie guo baocun chenggong ")
             emailSender = EmailSender(receivers, usernames, passwords, urls)
             emailSender.send_emails()
     except Exception:
@@ -202,7 +206,7 @@ def start_voting(request):
         return HttpResponse(json.dumps(res), content_type='application/json')
     res = {
         'code': 1,
-        'data': {'electionid': id, 'status': 1},
+        'data': {'electionid': id, 'status': "1"},
         'message': '选举启动成功！'
     }
     return HttpResponse(json.dumps(res), content_type='application/json')
@@ -223,7 +227,7 @@ def suspend_voting(request):
         pass
     res = {
         'code': 1,
-        'data': {'electionid': id, 'status': 2},
+        'data': {'electionid': id, 'status': "2"},
         'message': '冻结选举成功！'
     }
     return HttpResponse(json.dumps(res), content_type='application/json')
@@ -245,7 +249,7 @@ def stop_voting(request):
         pass
     res = {
         'code': 1,
-        'data': {'electionid': id, 'status': 4},
+        'data': {'electionid': id, 'status': "4"},
         'message': '结束选举成功！'
     }
     return HttpResponse(json.dumps(res), content_type='application/json')
@@ -348,7 +352,7 @@ def anonymous_result(request):
 
         res = {
             'code': 1,
-            'data': {'electionid': data['electionid'], 'status': 5},
+            'data': {'electionid': data['electionid'], 'status': "5"},
             'message': '统计结果成功！'
         }
         return HttpResponse(json.dumps(res), content_type='application/json')
@@ -376,7 +380,7 @@ def real_name_result(request):
     election.save()
     res = {
         'code': 1,
-        'data': {'electionid': data['electionid'], 'status': 5},
+        'data': {'electionid': data['electionid'], 'status': "5"},
         'message': '统计结果成功！'
     }
     return HttpResponse(json.dumps(res), content_type='application/json')

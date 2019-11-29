@@ -31,14 +31,15 @@ class RandomGen(object):
 
 class HashTools(object):
     def __init__(self, length):
-        if length > 300:
-            self.h = SHA512.new()
-        else:
-            self.h = SHA256.new()
+        self.length = length
 
     def get_hash(self, mybytes):
-        self.h.new(mybytes)
-        return str(self.h.digest())
+        if self.length > 300:
+            ha = SHA512.new()
+        else:
+            ha = SHA256.new()
+        ha.new(mybytes.encode('utf-8'))
+        return str(ha.digest())
 
 
 class MixByHash(object):

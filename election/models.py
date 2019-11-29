@@ -48,8 +48,8 @@ class Elections(models.Model):
         data = {}
         data['shortname'] = self.shortName
         data['fullname'] = self.fullName
-        data['isprivate'] = self.isPrivate
-        data['isanonymous'] = self.isAnonymous
+        data['isprivate'] = str(self.isPrivate)
+        data['isanonymous'] = str(self.isAnonymous)
         data['info'] = self.description
         data['status'] = str(self.status)
         data['id'] = self.id
