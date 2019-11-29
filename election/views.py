@@ -389,7 +389,8 @@ def real_name_result(request):
 # ################################返回投票中的加密包，接收最终投票结果##################################
 def fetch_vote_functions(request):
     data = json.loads(request.body)
-    election = Elections.objects.filter(id=data['electionid'])
+    election = Elections.objects.get(id=int(data['electionid']))
+    print(election)
     publickey = {}
     hashvalue = []
     if election.isAnonymous:
@@ -428,7 +429,7 @@ def fetch_vote_info(request):
             elections.append(election)
         res = {
             'code': 1,
-            'data': elections,
+            'data': {'votesList': elections},
             'message': '获取选举信息成功'
         }
         return HttpResponse(json.dumps(res), content_type='application/json')
@@ -451,7 +452,7 @@ def collect_votes(request):
         user = User.objects.get(username=username)
 
     try:
-        election = Elections.objects.filter(id=data['electionid'])
+        election = Elections.objects.get(id=data['electionid'])
         voterlist = VoterList.objects.filter(election=election).filter(voter=user)
         for item in voterlist:
             pm = data['privatemessage'][0]
