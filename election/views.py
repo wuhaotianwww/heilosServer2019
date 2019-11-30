@@ -390,7 +390,6 @@ def real_name_result(request):
 def fetch_vote_functions(request):
     data = json.loads(request.body)
     election = Elections.objects.get(id=int(data['electionid']))
-    print(election)
     publickey = {}
     hashvalue = []
     if election.isAnonymous:
@@ -453,19 +452,18 @@ def collect_votes(request):
 
     try:
         election = Elections.objects.get(id=data['electionid'])
-        voterlist = VoterList.objects.filter(election=election).filter(voter=user)
-        for item in voterlist:
-            pm = data['privatemessage'][0]
-            for i in range(len(data['privatemessage'])-1):
-                pm += "&&" + data['privatemessage'][i+1]
-            item.voteResult = pm
-            if election.isAnonymous:
-                td = data['trapdoor'][0]
-                for i in range(len(data['trapdoor'])-1):
-                    td += "&&" + data['trapdoor'][i+1]
-                item.voterKey = td
-            item.isVote = True
-            item.save()
+        voter = VoterList.objects.get(election=election, voter=user)
+        pm = data['privatemessage'][0]
+        for i in range(len(data['privatemessage'])-1):
+            pm += "&&" + data['privatemessage'][i+1]
+        voter.voteResult = pm
+        if election.isAnonymous:
+            td = data['trapdoor'][0]
+            for i in range(len(data['trapdoor'])-1):
+                td += "&&" + data['trapdoor'][i+1]
+        voter.voterKey = td
+        voter.isVote = True
+        voter.save()
         res = {
             'code': 1,
             'message': '投票成功'
