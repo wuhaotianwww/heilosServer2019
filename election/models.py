@@ -67,8 +67,8 @@ class Elections(models.Model):
     def update(self, data):
         self.shortName = data['shortname']
         self.fullName = data['fullname']
-        self.isPrivate = data['isprivate'] == 'true'
-        self.isAnonymous = data['isanonymous'] == 'true'
+        self.isPrivate = data['isprivate'] == 'True'
+        self.isAnonymous = data['isanonymous'] == 'True'
         self.description = data['info']
         self.startTime = data['starttime']
         self.endTime = data['endtime']
@@ -98,9 +98,9 @@ class Elections(models.Model):
         item['startTime'] = data['starttime']
         item['endTime'] = data['endtime']
         item['status'] = 0
-        item['isPrivate'] = data['isprivate'] == 'true'
-        item['isAnonymous'] = data['isanonymous'] == 'true'
-        item['cryptoMethod'] = data['isanonymous'] == 'true'
+        item['isPrivate'] = data['isprivate'] == 'True'
+        item['isAnonymous'] = data['isanonymous'] == 'True'
+        item['cryptoMethod'] = data['isanonymous'] == 'True'
 
         question = data['questionlist'][0]
         for i in range(len(data['questionlist']) - 1):

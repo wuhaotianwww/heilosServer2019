@@ -183,7 +183,6 @@ def start_voting(request):
             receivers = []
             usernames = []
             passwords = []
-            print("jie guo baocun chenggong ")
             for each in voters:
                 usernames.append(each.voter)
                 receivers.append(each.email)
@@ -195,7 +194,6 @@ def start_voting(request):
                     passwords.append('123456')
                 VoterList.objects.create(voter=User.objects.get(username=each.voter), email=each.email, election=election)
             urls = 'http://localhost:3000/user/login'
-            print("jie guo baocun chenggong ")
             emailSender = EmailSender(receivers, usernames, passwords, urls)
             emailSender.send_emails()
     except Exception:
