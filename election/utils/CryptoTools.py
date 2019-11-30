@@ -39,7 +39,7 @@ class HashTools(object):
         else:
             ha = SHA256.new()
         ha.new(mybytes.encode('utf-8'))
-        return Integer.from_bytes(ha.digest())
+        return str(Integer.from_bytes(ha.digest()))
 
 
 class MixByHash(object):
