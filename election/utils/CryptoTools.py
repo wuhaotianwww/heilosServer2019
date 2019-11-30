@@ -38,7 +38,7 @@ class HashTools(object):
             ha = SHA512.new()
         else:
             ha = SHA256.new()
-        ha.new(mybytes.encode('utf-8'))
+        ha.update(mybytes.encode('utf-8'))
         return str(Integer.from_bytes(ha.digest()))
 
 

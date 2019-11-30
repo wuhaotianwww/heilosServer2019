@@ -194,8 +194,8 @@ def start_voting(request):
                     passwords.append('123456')
                 VoterList.objects.create(voter=User.objects.get(username=each.voter), email=each.email, election=election)
             urls = 'http://localhost:3000/user/login'
-            emailSender = EmailSender(receivers, usernames, passwords, urls)
-            emailSender.send_emails()
+            # emailSender = EmailSender(receivers, usernames, passwords, urls)
+            # emailSender.send_emails()
     except Exception:
         res = {
             'code': -1,
@@ -204,7 +204,7 @@ def start_voting(request):
         return HttpResponse(json.dumps(res), content_type='application/json')
     res = {
         'code': 1,
-        'data': {'electionid': id, 'status': "1"},
+        'data': {'electionid': id, 'status': "0"},
         'message': '选举启动成功！'
     }
     return HttpResponse(json.dumps(res), content_type='application/json')
@@ -344,7 +344,7 @@ def anonymous_result(request):
                 else:
                     result[each] = 1
         election.voteResult = str(result)
-        election.verifyFile = path
+        election.verifyFile = "download/" + "verify_for_election_" + data['id'] + ".json"
         election.status = 5
         election.save()
 
@@ -390,6 +390,7 @@ def fetch_vote_functions(request):
     election = Elections.objects.get(id=int(data['electionid']))
     publickey = {}
     hashvalue = []
+    print(election.selectionsHash)
     if election.isAnonymous:
         publickey = eval(election.publicKey)
         hashvalue = [eval(each) for each in election.selectionsHash.split('&&')]
