@@ -282,8 +282,10 @@ def response_bbc(request):
         return HttpResponse(json.dumps({'code': -1, 'message': '用户无权限！'}), content_type='application/json')
     result = {}
     if election.isAnonymous:
-        result['publicmessage'] = election.publicKey
-        result['provemessage'] = "证明文件下载地址：" + election.verifyFile
+        if election.publicKey:
+            result['publicmessage'] = election.publicKey
+        if election.verifyFile:
+            result['provemessage'] = "证明文件下载地址：" + election.verifyFile
     else:
         result['publicmessage'] = "非加密投票中无需产生公钥"
         result['provemessage'] = "非加密投票中无需产生证明文件"
