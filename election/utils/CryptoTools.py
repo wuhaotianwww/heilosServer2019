@@ -151,8 +151,10 @@ class MixNet(object):
                                              self.g, self.public_key, self.p, self.private_key)
 
     def get_mes(self, encoder, i):
-        for key, value in self.selections[i].items():
+        print(self.selections)
+        for key, value in self.selections.items():
             if pow(self.g, value, self.p) == encoder:
+                print(key)
                 return key
 
     def get_plain_message(self):
@@ -161,9 +163,11 @@ class MixNet(object):
         for i in range(self.vote_num):
             message.append(["0" for j in range(num)])
         position = MixByHash.generate_random_sequence(self._Pi, self.vote_num)
+        print(position)
         for i in range(self.vote_num):
             for j in range(num):
                 gm = Integer.__mod__(self.vote[i][j] * Integer.inverse(self.votegr[i][j], self.p) * Integer.inverse(pow(self.votegr[i][j], self.private_key, self.p), self.p), self.p)
+                print(gm)
                 message[position[i]][j] = self.get_mes(gm, j)
         return message
 
@@ -189,7 +193,7 @@ class MixNet(object):
 
     def verify_file_generate(self, file_path):
         """生成密文展示结果"""
-        result_file = []
+        verify_file = []
         encoder, grr, hrr = self.ciphertext_generate()
         plaintxt = self.get_plain_message()
         for i in range(self.vote_num):
@@ -198,10 +202,10 @@ class MixNet(object):
             dic['grr'] = [str(a.to_bytes().hex()) for a in grr[i]]
             dic['hrr'] = [str(a.to_bytes().hex()) for a in hrr[i]]
             dic['plaintxt'] = [a for a in plaintxt[i]]
-            result_file.append(dic)
+            verify_file.append(dic)
 
         """生成验证文件"""
-        verify_file = []
+        # verify_file = []
         case_list = MixByHash.generate_random_case(self.p, self.p, self.p)
         for each in case_list:
             if each:

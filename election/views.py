@@ -273,7 +273,13 @@ def response_bbc(request):
     """
     data = json.loads(request.body)
     id = data['electionid']
-    election = Elections.objects.filter(id=id)
+    auth = request.META.get('HTTP_AUTHORIZATION').split()
+    token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+    username = token.get('data').get('username')
+    election = Elections.objects.get(id=id)
+
+    if not (election.author.username == username or username in list(TempVoterList.objects.filter(election=election).values_list('voter', flat=True))):
+        return HttpResponse(json.dumps({'code': -1, 'message': '用户无权限！'}), content_type='application/json')
     result = {}
     if election.isAnonymous:
         result['publicmessage'] = election.publicKey
@@ -282,7 +288,7 @@ def response_bbc(request):
         result['publicmessage'] = "非加密投票中无需产生公钥"
         result['provemessage'] = "非加密投票中无需产生证明文件"
 
-    voter_list = VoterList.objects.filter(election=election).value_list('voter', 'voteResult')
+    voter_list = VoterList.objects.filter(election=election).values_list('voter', 'voteResult')
     privatemessage = []
     for each in voter_list:
         if each[1] is not None:
@@ -290,7 +296,9 @@ def response_bbc(request):
     result['privatemessage'] = privatemessage
 
     if election.status == 5:
-        result['resshow'] = read_from_verify(election.verifyFile)
+        folder = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'election\\verifyfiles\\')
+        path = folder + "verify_for_election_" + str(data['electionid']) + ".json"
+        result['resshow'] = read_from_verify(path)  # election.verifyFile
         result['resstatistics'] = eval(election.voteResult)
     else:
         result['resshow'] = ""
@@ -307,7 +315,7 @@ def response_bbc(request):
 # ################################生成投票结果##################################
 def generate_result(request):
     data = json.loads(request.body)
-    election = Elections.objects.filter(id=data['electionid'])
+    election = Elections.objects.get(id=data['electionid'])
     election.status = 3
     if election.isAnonymous:
         return anonymous_result(request)
@@ -318,25 +326,25 @@ def generate_result(request):
 def anonymous_result(request):
     data = json.loads(request.body)
     try:
-        election = Elections.objects.filter(id=data['electionid'])
+        election = Elections.objects.get(id=data['electionid'])
         voterlist = VoterList.objects.filter(election=election)
         publickey = eval(election.publicKey)
         p = str2integer(publickey['p'])
         g = str2integer(publickey['g'])
         h = str2integer(publickey['h'])
         x = str2integer(election.privateKey)
-        selections = election.selectionsHash
+        selections = eval(election.selectionsHash)
         votes = []
         votegrs = []
         for item in voterlist:
-            votes.append(item.voteResult.split("&&"))
-            votegrs.append(item.voterKey.split("&&"))
+            votes.append([str2integer(each) for each in item.voteResult.split("&&")])
+            votegrs.append([str2integer(each) for each in item.voterKey.split("&&")])
         mymix = MixNet(p, g, x, h, votes, votegrs, len(votes), selections)
         message = mymix.get_plain_message()
         folder = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'election\\verifyfiles\\')
-        path = folder + "verify_for_election_" + data['id'] + ".json"
+        path = folder + "verify_for_election_" + str(data['electionid']) + ".json"
         mymix.verify_file_generate(path)
-        result = []
+        result = {}
         for item in message:
             for each in item:
                 if each in result:
@@ -344,10 +352,9 @@ def anonymous_result(request):
                 else:
                     result[each] = 1
         election.voteResult = str(result)
-        election.verifyFile = "download/" + "verify_for_election_" + data['id'] + ".json"
+        election.verifyFile = "download/" + "verify_for_election_" + str(data['electionid']) + ".json"
         election.status = 5
         election.save()
-
         res = {
             'code': 1,
             'data': {'electionid': data['electionid'], 'status': "5"},
@@ -365,7 +372,7 @@ def anonymous_result(request):
 def real_name_result(request):
     data = json.loads(request.body)
     election = Elections.objects.filter(id=data['electionid'])
-    out = VoterList.objects.filter(election=election).value_list('voteResult')
+    out = VoterList.objects.filter(election=election).values_list('voteResult')
     result = {}
     for item in out:
         for each in item:
@@ -390,7 +397,6 @@ def fetch_vote_functions(request):
     election = Elections.objects.get(id=int(data['electionid']))
     publickey = {}
     hashvalue = []
-    print(election.selectionsHash)
     if election.isAnonymous:
         publickey = eval(election.publicKey)
         hashvalue = [eval(each) for each in election.selectionsHash.split('&&')]
@@ -423,7 +429,7 @@ def fetch_vote_info(request):
         for each in voters:
             item = each.election
             election = item.to_dict()
-            election['isvoted'] = each.isVote
+            election['isvoted'] = False  # each.isVote
             elections.append(election)
         res = {
             'code': 1,
@@ -447,11 +453,11 @@ def collect_votes(request):
         auth = request.META.get('HTTP_AUTHORIZATION').split()
         token = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
         username = token.get('data').get('username')
-        user = User.objects.get(username=username)
 
     try:
         election = Elections.objects.get(id=data['electionid'])
-        voter = VoterList.objects.get(election=election, voter=user)
+        voter = VoterList.objects.get(election=election, voter=username)  #
+
         pm = data['privatemessage'][0]
         for i in range(len(data['privatemessage'])-1):
             pm += "&&" + data['privatemessage'][i+1]
