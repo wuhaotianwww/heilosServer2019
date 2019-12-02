@@ -151,10 +151,8 @@ class MixNet(object):
                                              self.g, self.public_key, self.p, self.private_key)
 
     def get_mes(self, encoder, i):
-        print(self.selections)
-        for key, value in self.selections.items():
+        for key, value in self.selections[i].items():
             if pow(self.g, value, self.p) == encoder:
-                print(key)
                 return key
 
     def get_plain_message(self):
@@ -163,11 +161,9 @@ class MixNet(object):
         for i in range(self.vote_num):
             message.append(["0" for j in range(num)])
         position = MixByHash.generate_random_sequence(self._Pi, self.vote_num)
-        print(position)
         for i in range(self.vote_num):
             for j in range(num):
                 gm = Integer.__mod__(self.vote[i][j] * Integer.inverse(self.votegr[i][j], self.p) * Integer.inverse(pow(self.votegr[i][j], self.private_key, self.p), self.p), self.p)
-                print(gm)
                 message[position[i]][j] = self.get_mes(gm, j)
         return message
 
@@ -226,7 +222,6 @@ class MixNet(object):
 
         # 写入文件
         with open(file_path, 'w') as f:
-            json.dump(result_file, f)
             json.dump(verify_file, f)
 
 

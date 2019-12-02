@@ -283,9 +283,9 @@ def response_bbc(request):
     result = {}
     if election.isAnonymous:
         if election.publicKey:
-            result['publicmessage'] = election.publicKey
+            result['publicmessage'] = eval(election.publicKey)
         if election.verifyFile:
-            result['provemessage'] = "证明文件下载地址：" + election.verifyFile
+            result['provemessage'] = election.verifyFile
     else:
         result['publicmessage'] = "非加密投票中无需产生公钥"
         result['provemessage'] = "非加密投票中无需产生证明文件"
@@ -335,18 +335,22 @@ def anonymous_result(request):
         g = str2integer(publickey['g'])
         h = str2integer(publickey['h'])
         x = str2integer(election.privateKey)
-        selections = eval(election.selectionsHash)
+        selections = [eval(each) for each in election.selectionsHash.split("&&")]
         votes = []
         votegrs = []
+
         for item in voterlist:
             votes.append([str2integer(each) for each in item.voteResult.split("&&")])
             votegrs.append([str2integer(each) for each in item.voterKey.split("&&")])
+
         mymix = MixNet(p, g, x, h, votes, votegrs, len(votes), selections)
         message = mymix.get_plain_message()
+
         folder = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'election\\verifyfiles\\')
         path = folder + "verify_for_election_" + str(data['electionid']) + ".json"
         mymix.verify_file_generate(path)
         result = {}
+
         for item in message:
             for each in item:
                 if each in result:
@@ -431,7 +435,7 @@ def fetch_vote_info(request):
         for each in voters:
             item = each.election
             election = item.to_dict()
-            election['isvoted'] = False  # each.isVote
+            election['isvoted'] = each.isVote
             elections.append(election)
         res = {
             'code': 1,
